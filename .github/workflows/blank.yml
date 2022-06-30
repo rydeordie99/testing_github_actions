@@ -3,26 +3,17 @@ on: [push]
 jobs:
   changedfiles:
     runs-on: ubuntu-latest
-    # Map a step output to a job output
-    outputs:
-      all: ${{ steps.changes.outputs.all}}
     steps:
         # Make sure we have some code to diff.
       - name: Checkout repository
         uses: actions/checkout@v2
-      - name: Get changed files
-        id: changes
-        # Set outputs using the command.
+        with:
+          fetch-depth: 2
+      - name: get changed files
+        id: getfile
         run: |
-          echo "::set-output name=all::$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | xargs)"     
-          
-          
-  lint:
-    runs-on: ubuntu-latest
-    # require the first job to have ran
-    needs: changedfiles
-    # only run there are changed files
-    if: ${{needs.changedfiles.outputs.all}}
-    steps:
-      - name: echo changed files
-        run: echo ${{needs.changedfiles.outputs.all}}
+          echo "::set-output name=files::$(git diff-tree --no-commit-id --name-only -r ${{ github.sha }} | xargs)"
+
+      - name: echo output
+        run: |
+          echo ${{ steps.getfile.outputs.files }}
